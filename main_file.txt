@@ -1,3 +1,375 @@
+Option Explicit
+
+'Variables globlaes
+'fls = nº de filas del rango de datos
+'cls = nº de columnas del rango de datos
+Dim fls, cls, N_dias, N_sim, inversio As Integer
+
+Sub GetImportFilename()
+
+    Dim Flit As String
+    Dim FilterIndex As Integer
+    Dim Title As String
+    Dim Filename As String
+    
+    ' Configurar lista de archivos filtrados
+    Flit = "Archivos de texto (*.txt),*.txt," & _
+    "Archivos Lotus (*.pro),*.pro," & _
+    "Archivos separados por coma (*.csv), *.csv, " & _
+    "Archivos ASCII (*.asc),*.asc, " & _
+    "Todos los archivos (*.*), *.*"
+    
+    ' Mostrar *.* por defecto
+    FilterIndex = 5
+
+    ' Configurar el título del cuadro de dialogo
+    Title = "Seleccionar archivos para importar"
+    
+    ' Obtener nombre de archivo
+    Filename = Application.GetOpenFilename _
+    (FileFilter:=Flit, _
+    FilterIndex:=FilterIndex, _
+    Title:=Title)
+    ' Salir si se cancela el cuadro de dialogo
+    If Filename = "" Then
+        MsgBox "No fue seleccionado ningún archivo."
+        Exit Sub
+    End If
+    
+    ' Mostrar la ruta completa y el nombre del archivo
+    MsgBox "Seleccionó " & Filename
+    
+    ' Abrir el archivo/libro seleccionado
+    Workbooks.Open Filename:=Filename
+    Sheets(1).Name = "Data"
+
+End Sub
+
+
+'Función para copiar los títulos y las fechas
+Sub Copiar_titulos(Nombre As String)
+   
+    'Copiar titulos y fechas de la hoja 1 a la nueva hoja de cálculo
+    Sheets(1).Select
+        
+    fls = Range("A1", Range("A1").End(xlDown)).Rows.Count
+    cls = Range("A1", Range("A1").End(xlToRight)).Columns.Count
+    
+    Range(Cells(1, 1), Cells(1, cls)).Copy Sheets(Nombre).Range("A1")
+    Range(Cells(2, 1), Cells(fls, 1)).Copy Sheets(Nombre).Range("A2")
+    Application.CutCopyMode = False  'eliminar marca de rango despues de copiar
+    Sheets(Nombre).Columns("A:A").ColumnWidth = 13.5
+
+End Sub
+
+'Insertar nueva hoja de cálculo
+'Parámetro Nombre que se es el nombre de la hoja de cálculo
+Sub Crear_hoja(Nombre As String)
+
+    Dim Hoja As Worksheet
+    Dim existe As Boolean
+    
+    For Each Hoja In Worksheets
+        If Hoja.Name = Nombre Then
+            existe = True
+            Exit For
+        End If
+    Next Hoja
+    
+    If Not existe Then
+        Sheets.Add After:=Sheets(Sheets.Count)
+        Sheets(Sheets.Count).Name = Nombre
+    End If
+    
+End Sub
+
+Sub Descr(fls, cls)
+    
+    'Crear hoja descriptivos
+    Call Crear_hoja("Descriptivos")
+    
+    'Incluir nombres descriptivos en las celdas
+    Sheets("Descriptivos").Select
+    Range("A1").Value = "Rentabilidades diarias"
+    Columns("A:A").ColumnWidth = 28.57
+    Range("A3").Value = "Media"
+    Range("A4").Value = "Desviación"
+
+    Sheets("Rendimientos").Select
+    Range(Cells(1, 2), Cells(1, cls)).Copy Sheets("Descriptivos").Range("B2")
+
+    'Calculos
+    Sheets("Descriptivos").Select
+
+    Range("B3").FormulaR1C1 = "=AVERAGE(Rendimientos!R[-1]C:R[" + CStr(fls - 3) + "]C)"
+    Range("B3").Select
+    Selection.AutoFill Destination:=Range(Cells(3, 2), Cells(3, cls)), Type:=xlFillDefault
+
+    Range("B4").FormulaR1C1 = "=STDEV.S(Rendimientos!R[-2]C:R[" + CStr(fls - 4) + "]C)"
+
+    Range("B4").Select
+    Selection.AutoFill Destination:=Range(Cells(4, 2), Cells(4, cls)), Type:=xlFillDefault
+
+    
+    'Formatos
+    Range(Cells(3, 2), Cells(4, cls)).Select
+
+    Selection.NumberFormat = "0.0000%"
+    Range(Cells(1, 2), Cells(1, cls)).Select
+    Selection.Font.Bold = True
+    Range(Cells(2, 2), Cells(2, cls)).Select
+    Selection.Font.Bold = True
+    Range(Cells(2, 2), Cells(4, cls)).Select
+
+    Selection.Borders(xlDiagonalDown).LineStyle = xlNone
+    Selection.Borders(xlDiagonalUp).LineStyle = xlNone
+    With Selection.Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Selection.Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Selection.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Selection.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    Selection.Borders(xlInsideVertical).LineStyle = xlNone
+    Selection.Borders(xlInsideHorizontal).LineStyle = xlNone
+    Range(Cells(3, 2), Cells(4, cls)).Select
+
+    Selection.Borders(xlDiagonalDown).LineStyle = xlNone
+    Selection.Borders(xlDiagonalUp).LineStyle = xlNone
+    
+    With Selection.Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Selection.Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Selection.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    With Selection.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .ColorIndex = 0
+        .TintAndShade = 0
+        .Weight = xlMedium
+    End With
+    Selection.Borders(xlInsideVertical).LineStyle = xlNone
+    Selection.Borders(xlInsideHorizontal).LineStyle = xlNone
+    Range("A7").Select
+End Sub
+
+Sub Valores_formulario()
+
+'Los cuadros del formulario mostraran los valores calculados de media y desviación
+    Select Case (cls - 1)
+        Case 3
+        Pesos.Peso4.Visible = False
+        Pesos.Peso5.Visible = False
+        Pesos.Peso6.Visible = False
+        Pesos.Peso7.Visible = False
+        Pesos.Peso8.Visible = False
+        Pesos.Peso9.Visible = False
+        Pesos.Peso10.Visible = False
+        Case 4
+        Pesos.Peso5.Visible = False
+        Pesos.Peso6.Visible = False
+        Pesos.Peso7.Visible = False
+        Pesos.Peso8.Visible = False
+        Pesos.Peso9.Visible = False
+        Pesos.Peso10.Visible = False
+        Case 5
+        Pesos.Peso6.Visible = False
+        Pesos.Peso7.Visible = False
+        Pesos.Peso8.Visible = False
+        Pesos.Peso9.Visible = False
+        Pesos.Peso10.Visible = False
+        Case 6
+        Pesos.Peso7.Visible = False
+        Pesos.Peso8.Visible = False
+        Pesos.Peso9.Visible = False
+        Pesos.Peso10.Visible = False
+        Case 7
+        Pesos.Peso8.Visible = False
+        Pesos.Peso9.Visible = False
+        Pesos.Peso10.Visible = False
+        Case 8
+        Pesos.Peso9.Visible = False
+        Pesos.Peso10.Visible = False
+        Case 9
+        Pesos.Peso10.Visible = False
+    End Select
+    
+    Sheets("Descriptivos").Activate
+    'Nombre del Título
+    Pesos.Titulo1.Caption = Cells(2, 2).Value
+    Pesos.Titulo2.Caption = Cells(2, 3).Value
+    Pesos.Titulo3.Caption = Cells(2, 4).Value
+    Pesos.Titulo4.Caption = Cells(2, 5).Value
+    Pesos.Titulo5.Caption = Cells(2, 6).Value
+    Pesos.Titulo6.Caption = Cells(2, 7).Value
+    Pesos.Titulo7.Caption = Cells(2, 8).Value
+    Pesos.Titulo8.Caption = Cells(2, 9).Value
+    Pesos.Titulo9.Caption = Cells(2, 10).Value
+    Pesos.Titulo10.Caption = Cells(2, 11).Value
+    
+    'Rentabilidad media diaria
+    Pesos.Mean1.Caption = Format(Cells(3, 2).Value, "0.0000%")
+    Pesos.Mean2.Caption = Format(Cells(3, 3).Value, "0.0000%")
+    Pesos.Mean3.Caption = Format(Cells(3, 4).Value, "0.0000%")
+    Pesos.Mean4.Caption = Format(Cells(3, 5).Value, "0.0000%")
+    Pesos.Mean5.Caption = Format(Cells(3, 6).Value, "0.0000%")
+    Pesos.Mean6.Caption = Format(Cells(3, 7).Value, "0.0000%")
+    Pesos.Mean7.Caption = Format(Cells(3, 8).Value, "0.0000%")
+    Pesos.Mean8.Caption = Format(Cells(3, 9).Value, "0.0000%")
+    Pesos.Mean9.Caption = Format(Cells(3, 10).Value, "0.0000%")
+    Pesos.Mean10.Caption = Format(Cells(3, 11).Value, "0.0000%")
+    
+    'Volatilidad diaria
+    Pesos.SD1.Caption = Format(Cells(4, 2).Value, "0.0000%")
+    Pesos.SD2.Caption = Format(Cells(4, 3).Value, "0.0000%")
+    Pesos.SD3.Caption = Format(Cells(4, 4).Value, "0.0000%")
+    Pesos.SD4.Caption = Format(Cells(4, 5).Value, "0.0000%")
+    Pesos.SD5.Caption = Format(Cells(4, 6).Value, "0.0000%")
+    Pesos.SD6.Caption = Format(Cells(4, 7).Value, "0.0000%")
+    Pesos.SD7.Caption = Format(Cells(4, 8).Value, "0.0000%")
+    Pesos.SD8.Caption = Format(Cells(4, 9).Value, "0.0000%")
+    Pesos.SD9.Caption = Format(Cells(4, 10).Value, "0.0000%")
+    Pesos.SD10.Caption = Format(Cells(4, 11).Value, "0.0000%")
+
+End Sub
+
+Function Entrar_pesos() As Boolean
+
+    Dim contador As Integer
+    Entrar_pesos = True
+        
+    Call Valores_formulario
+    Pesos.Show
+    Sheets("Descriptivos").Select
+    contador = Application.WorksheetFunction.Sum(Range("B7:K7"))
+    If contador <> 1 Then
+        MsgBox ("Los pesos deben sumar 1")
+        Entrar_pesos = False
+        Exit Function
+    End If
+    'If (Cells(7, 2).Value + Cells(7, 3).Value + Cells(7, 4).Value + Cells(7, 5).Value + Cells(7, 6).Value + Cells(7, 7).Value + Cells(7, 8).Value + Cells(7, 9).Value + Cells(7, 10).Value + Cells(7, 11).Value) <> 1 Then
+       ' MsgBox ("Los pesos deben sumar 1")
+        
+    'End If
+    'comprovar que el número de simulacions és el correcte
+    If (TypeName(CInt(Cells(13, 2).Value)) <> "Integer") Or (Cells(13, 2).Value <= 0) Then
+        MsgBox ("Número de simualciones incorrecto, debe ser un número positivo")
+        Entrar_pesos = False
+        Exit Function
+        
+    End If
+    
+    'comprovar que el número de dies a simular és correcte
+    If (TypeName(CInt(Cells(13, 2).Value)) <> "Integer") Or (Cells(14, 2).Value <= 0) Then
+        MsgBox ("Número de días incorrecto, debe ser un número positivo")
+        Entrar_pesos = False
+        Exit Function
+    End If
+
+    If (TypeName(CInt(Cells(15, 2).Value)) <> "Integer") Or (Cells(15, 2).Value <= 0) Then
+        MsgBox ("Inversión inicial incorrecta, debe ser un número positivo")
+        Entrar_pesos = False
+        Exit Function
+    End If
+    
+End Function
+
+Sub Simular(fls, cls)
+
+    'Solicitar número de simulaciones (entre 5 y 10)
+    'Solicitar número de simulaciones (mínimo 100)
+    'Solicitar pesos
+    Dim correcto As Boolean
+    While Not correcto
+    correcto = Entrar_pesos()
+    Wend
+        
+    'Calcular la rentabilidad media de la cartera y su volatilidad
+    Sheets("Descriptivos").Select
+    Cells(10, 1).Value = "Media cartera"
+    Cells(11, 1).Value = "Volatilidad cartera"
+    Range("B8").Select
+    ActiveCell.FormulaR1C1 = "=R[-5]C*R7C"
+    Selection.AutoFill Destination:=Range("B8:K8"), Type:=xlFillDefault
+    Range("B8:K8").Select
+    Selection.AutoFill Destination:=Range("B8:K9"), Type:=xlFillDefault
+    
+    Range("B10").Select
+    ActiveCell.FormulaR1C1 = "=SUM(R[-2]C[-1]:R[-2]C[7])"
+    
+    Selection.AutoFill Destination:=Range("B10:B11"), Type:=xlFillDefault
+    Range("B10:B11").Select
+    Range("B11").Select
+
+    
+    N_dias = Cells(14, 2).Value
+    N_sim = Cells(13, 2).Value
+    inversio = Cells(15, 2).Value
+    
+    Rows("8:9").Select
+    With Selection.Font
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = 0
+    End With
+    Range("A1").Select
+    'Simular
+    'Crear hoja simulaciones
+    Call Crear_hoja("Simular")
+    
+    Sheets("Simular").Select
+    Cells(1, 1).Value = "Dias"
+    Range("A2").Select
+    ActiveCell.Value = "1"
+    Range("A3").Select
+    ActiveCell.Value = "2"
+    Range("A4").Select
+    ActiveCell.Value = "3"
+    Range("A2:A4").Select
+    Selection.AutoFill Destination:=Range(Cells(2, 1), Cells(N_dias + 1, 1)), Type:=xlFillDefault
+    Range("B1").Select
+    ActiveCell.FormulaR1C1 = "Simulación 1"
+
+    Selection.AutoFill Destination:=Range(Cells(1, 2), Cells(1, N_sim + 1)), Type:=xlFillDefault
+    Range("B2").Select
+    Application.Run "ATPVBAEN.XLAM!Random", ActiveSheet.Range("$B$2"), N_sim, N_dias _
+        , 2, , Sheets("Descriptivos").Cells(10, 2).Value, Sheets("Descriptivos").Cells(11, 2).Value
+    
+    Call Final(N_dias, N_sim, inversio)
+        
+        
+End Sub
+
+
 Sub Main()
 
     On Error GoTo Errores:
@@ -116,3 +488,4 @@ Sub Final(N_dias, N_sim, inversio)
     
 
 End Sub
+
