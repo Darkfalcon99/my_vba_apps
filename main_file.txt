@@ -1,0 +1,118 @@
+Sub Main()
+
+    On Error GoTo Errores:
+    
+    Dim q As Integer
+    
+    q = MsgBox("¿Desea abrir un archivo de datos?", vbYesNo + vbQuestion, "Archivo de datos")
+       
+    If q = 6 Then
+        Call GetImportFilename
+    Else
+        If q = 7 Then
+            MsgBox Prompt:="Se utilizan con los datos de ejemplo", Buttons:=vbOKOnly, _
+                                Title:="Archivo de datos"
+        Else
+            MsgBox Prompt:="Ha cancelado la ejecución", Buttons:=vbOKOnly, _
+                                Title:="Archivo de datos"
+            Exit Sub
+        End If
+    End If
+    
+    
+    Call Crear_hoja("Rendimientos")
+    Call Copiar_titulos("Rendimientos")
+       
+    'Calcular rendimientos
+    Sheets("Rendimientos").Activate
+    
+    fls = Range("A2", Range("A2").End(xlDown)).Rows.Count
+    cls = Range("A1", Range("A1").End(xlToRight)).Columns.Count
+    
+    'Con el método Autofill
+    ActiveSheet.Cells(2, 2).Select
+    ActiveCell.FormulaR1C1 = "=LN(Data!R[1]C/Data!RC)"
+    Range("B2").Select
+
+    Selection.AutoFill Destination:=Range(Cells(2, 2), Cells(2, cls)), Type:=xlFillDefault
+    Selection.AutoFill Destination:=Range(Cells(2, 2), Cells(fls, 2)), Type:=xlFillDefault
+    Selection.AutoFill Destination:=Range(Cells(2, 2), Cells(fls, cls)), Type:=xlFillDefault
+    
+    Range(Cells(2, 2), Cells(fls, cls)).Select
+    Selection.NumberFormat = "0.000"
+    
+    'Calcular las medias y lss variabilidades para las rentabilidades
+    Call Descr(fls, cls)
+      
+    Call Simular(fls, cls)
+    
+    
+    
+    Exit Sub
+    
+Errores:
+    MsgBox ("Se ha producido un error. El programa debe cerrarse")
+    
+End Sub
+
+Sub Final(N_dias, N_sim, inversio)
+    Dim minim As Double
+    Dim grans, petits As Double
+    Dim rang As Range
+    
+    Call Crear_hoja("Gráficos")
+    
+    Sheets("Simular").Select
+    Columns("A:A").Select
+    Selection.Copy
+    Sheets("Gráficos").Select
+    Columns("A:A").Select
+    ActiveSheet.Paste
+    Sheets("Simular").Select
+    Rows("1:1").Select
+    Application.CutCopyMode = False
+    Selection.Copy
+    Sheets("Gráficos").Select
+    Rows("1:1").Select
+    ActiveSheet.Paste
+    Range("B2").Select
+    Application.CutCopyMode = False
+    ActiveCell.FormulaR1C1 = "=Descriptivos!R15C2*EXP(Simular!RC)"
+    Range("B2").Select
+    Selection.AutoFill Destination:=Range(Cells(2, 2), Cells(2, N_sim + 1)), Type:=xlFillDefault
+    Range("B3").Select
+    ActiveCell.FormulaR1C1 = "=R[-1]C*EXP(Simular!RC)"
+    Selection.AutoFill Destination:=Range(Cells(3, 2), Cells(3, N_sim + 1)), Type:=xlFillDefault
+    
+    Range(Cells(3, 2), Cells(3, N_sim + 1)).Select
+    Selection.AutoFill Destination:=Range(Cells(3, 2), Cells(N_dias + 1, N_sim + 1)), Type:=xlFillDefault
+
+    Range(Cells(1, 2), Cells(N_dias + 1, N_sim + 1)).Select
+    minim = CInt(Application.WorksheetFunction.Min(Range(Cells(1, 2), Cells(N_dias + 1, N_sim + 1))))
+    
+    ActiveSheet.Shapes.AddChart2(227, xlLine).Select
+    ActiveChart.SetSourceData Source:=Range(Cells(1, 2), Cells(N_dias + 1, N_sim + 1))
+    
+    ActiveChart.ChartTitle.Select
+    Selection.Caption = "Simulaciones"
+    ActiveChart.PlotBy = xlColumns
+    ActiveChart.ChartArea.Select
+    Application.CutCopyMode = False
+    ActiveChart.Axes(xlValue).Select
+    ActiveChart.Axes(xlValue).MinimumScale = minim - 1
+    
+    Set rang = Range(Cells(N_dias + 1, 2), Cells(N_dias + 1, N_sim + 1))
+    grans = Application.WorksheetFunction.CountIf(rang, ">" + CStr(inversio))
+    petits = Application.WorksheetFunction.CountIf(rang, "<" + CStr(inversio))
+    MsgBox ("Simulacions fetes" & vbNewLine & "Simulacions on es guanyen diners: " & grans & vbNewLine & "Número de simulacions on es perden diners: " & petits)
+    Sheets("Rendimientos").Select
+    ActiveSheet.Protect DrawingObjects:=True, Contents:=True, Scenarios:=True
+    Sheets("Descriptivos").Select
+    ActiveSheet.Protect DrawingObjects:=True, Contents:=True, Scenarios:=True
+    Sheets("Simular").Select
+    ActiveSheet.Protect DrawingObjects:=True, Contents:=True, Scenarios:=True
+    Sheets("Gráficos").Select
+    
+    
+
+End Sub
